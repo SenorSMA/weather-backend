@@ -6,6 +6,10 @@ import json, os
 app = Flask(__name__)
 CORS(app)
 
+@app.route("/", methods=["GET"])
+def home():
+    return "Weather Backend is running!"
+
 LATEST_FILE = "latest.json"
 FIRMWARE_FILE = "firmware.bin"
 
