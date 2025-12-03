@@ -3,31 +3,37 @@ from flask import Flask, request, jsonify, send_file, url_for
 from flask_cors import CORS
 import json, os
 
+# Create the Flask app
 app = Flask(__name__)
 CORS(app)
 
+# Root route for Render homepage
 @app.route("/", methods=["GET"])
 def home():
     return "Weather Backend is running!"
 
+# File paths
 LATEST_FILE = "latest.json"
 FIRMWARE_FILE = "firmware.bin"
 
+# Load latest reading from file if it exists
 def load_latest():
     if os.path.exists(LATEST_FILE):
         try:
             with open(LATEST_FILE, "r") as f:
                 return json.load(f)
-        except:
+        except Exception:
             return {}
     return {}
 
 latest_reading = load_latest()
 
-@app.route("/health")
+# Health check route
+@app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
 
+# Ingest new sensor data
 @app.route("/ingest", methods=["POST"])
 def ingest():
     global latest_reading
@@ -41,13 +47,15 @@ def ingest():
         json.dump(latest_reading, f)
     return jsonify({"message": "data received"})
 
-@app.route("/latest")
+# Return latest reading
+@app.route("/latest", methods=["GET"])
 def latest():
     if latest_reading:
         return jsonify(latest_reading)
     return jsonify({"error": "no data yet"}), 404
 
-@app.route("/firmware/latest")
+# Firmware metadata
+@app.route("/firmware/latest", methods=["GET"])
 def firmware_latest():
     return jsonify({
         "version": "1.0.0",
@@ -55,11 +63,13 @@ def firmware_latest():
         "sha256": "replace-with-real-sha256"
     })
 
-@app.route("/firmware/download")
+# Firmware download
+@app.route("/firmware/download", methods=["GET"])
 def firmware_download():
     if os.path.exists(FIRMWARE_FILE):
         return send_file(FIRMWARE_FILE, as_attachment=True)
     return jsonify({"error": "firmware not found"}), 404
 
+# Local run (ignored by Render/Gunicorn)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050)
