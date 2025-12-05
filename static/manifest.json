@@ -1,0 +1,11 @@
+{
+  "name": "SMA Weather",
+  "short_name": "SMA Weather",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png" }
+  ],
+  "theme_color": "#2196F3",
+  "background_color": "#FFFFFF",
+  "display": "standalone",
+  "start_url": "/dashboard"
+}

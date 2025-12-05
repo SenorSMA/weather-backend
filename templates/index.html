@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMA Weather</title>
+
+  <!-- iPhone app icon -->
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <!-- Android manifest -->
+  <link rel="manifest" href="/static/manifest.json">
+  <!-- Fallback favicon -->
+  <link rel="icon" href="/static/apple-touch-icon.png" type="image/png">
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f5f7fb; color: #111; }
+    header { background: linear-gradient(135deg, #1e88e5, #42a5f5); color: #fff; padding: 20px; text-align: center; }
+    h1 { margin: 0; font-size: 22px; }
+    main { padding: 16px; max-width: 600px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); padding: 16px; margin-bottom: 12px; }
+    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .row:last-child { border-bottom: none; }
+    .label { font-weight: 600; color: #444; }
+    .value { color: #111; }
+    .muted { color: #888; font-size: 12px; margin-top: 8px; }
+    .ok { color: #2e7d32; }
+    .warn { color: #ef6c00; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SMA Weather</h1>
+    <div class="muted">Updates every 20 seconds</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="row"><div class="label">Temperature</div><div id="temp" class="value">-</div></div>
+      <div class="row"><div class="label">Humidity</div><div id="hum" class="value">-</div></div>
+      <div class="row"><div class="label">Pressure</div><div id="press" class="value">-</div></div>
+      <div class="row"><div class="label">Rain</div><div id="rain" class="value">0.00 in/h, 0.00 in/day</div></div>
+      <div class="row"><div class="label">Wind</div><div id="wind" class="value">0 m/s SE</div></div>
+      <div class="row"><div class="label">Battery</div><div id="bat" class="value">-</div></div>
+      <div class="row"><div class="label">Sun</div><div id="sun" class="value">-</div></div>
+      <div class="muted">Updated <span id="updated">-</span></div>
+    </div>
+    <div id="status" class="muted">Status: <span id="health">checking...</span></div>
+  </main>
+
+  <script>
+    const latestUrl = "https://weather-backend-rrxu.onrender.com/latest";
+    const healthUrl = "https://weather-backend-rrxu.onrender.com/health";
+
+    async function loadLatest() {
+      try {
+        const res = await fetch(latestUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error("Latest fetch failed");
+        const d = await res.json();
+
+        document.getElementById("temp").textContent = d.temperature !== undefined ? `${d.temperature} °C` : "-";
+        document.getElementById("hum").textContent = d.humidity !== undefined ? `${d.humidity} %` : "-";
+        document.getElementById("press").textContent = d.pressure !== undefined ? `${d.pressure} hPa` : "-";
+        const rainHour = d.rain_hour !== undefined ? Number(d.rain_hour).toFixed(2) : "0.00";
+        const rainDay = d.rain_day !== undefined ? Number(d.rain_day).toFixed(2) : "0.00";
+        document.getElementById("rain").textContent = `${rainHour} in/h, ${rainDay} in/day`;
+        const windSpeed = d.wind_speed !== undefined ? d.wind_speed : 0;
+        const windDir = d.wind_dir !== undefined ? d.wind_dir : "SE";
+        document.getElementById("wind").textContent = `${windSpeed} m/s ${windDir}`;
+        const batV = d.battery_voltage !== undefined ? `${d.battery_voltage} V` : "-";
+        const batP = d.battery_percent !== undefined ? `${d.battery_percent} %` : "-";
+        document.getElementById("bat").textContent = (batV !== "-" && batP !== "-") ? `${batV}, ${batP}` : "-";
+        const sunAlt = d.sun_alt !== undefined ? `${d.sun_alt}°` : "";
+        const sunAz = d.sun_az !== undefined ? `${d.sun_az}°` : "";
+        document.getElementById("sun").textContent = (sunAlt || sunAz) ? `${sunAlt} ${sunAz}` : "-";
+        document.getElementById("updated").textContent = d.timestamp || "-";
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(healthUrl, { cache: "no-store" });
+        const h = await res.json();
+        document.getElementById("health").textContent = h.status === "ok" ? "online" : "degraded";
+        document.getElementById("health").className = h.status === "ok" ? "ok" : "warn";
+      } catch {
+        document.getElementById("health").textContent = "offline";
+        document.getElementById("health").className = "warn";
+      }
+    }
+
+    loadLatest();
+    checkHealth();
+    setInterval(() => { loadLatest(); checkHealth(); }, 20000);
+  </script>
+</body>
+</html>
